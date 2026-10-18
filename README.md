@@ -1,83 +1,91 @@
-# 🏗 Scaffold-ETH 2
+# $BUG - Bug Bounty Hunter
 
-<h4 align="center">
-  <a href="https://docs.scaffoldeth.io">Documentation</a> |
-  <a href="https://scaffoldeth.io">Website</a>
-</h4>
+Meme token + game on Sepolia. You pay 100 BUG to "hunt" for a vulnerability, and Chainlink VRF decides what you found. Most of the time it's nothing or a gas optimization, sometimes it's a Critical worth 1000 BUG.
 
-🧪 An open-source, up-to-date toolkit for building decentralized applications (dapps) on the Ethereum blockchain. It's designed to make it easier for developers to create and deploy smart contracts and build user interfaces that interact with those contracts.
+Live site: TODO
 
-> [!NOTE]
-> 🤖 Scaffold-ETH 2 is AI-ready! It has everything agents need to build on Ethereum. Check `.agents/`, `.claude/`, `.opencode` or `.cursor/` for more info.
+Testnet only, the token is worth nothing.
 
-⚙️ Built using NextJS, RainbowKit, Foundry, Wagmi, Viem, and Typescript.
+## Why bugs
 
-- ✅ **Contract Hot Reload**: Your frontend auto-adapts to your smart contract as you edit it.
-- 🪝 **[Custom hooks](https://docs.scaffoldeth.io/hooks/)**: Collection of React hooks wrapper around [wagmi](https://wagmi.sh/) to simplify interactions with smart contracts with typescript autocompletion.
-- 🧱 [**Components**](https://docs.scaffoldeth.io/components/): Collection of common web3 components to quickly build your frontend.
-- 🔥 **Burner Wallet & Local Faucet**: Quickly test your application with a burner wallet and local faucet.
-- 🔐 **Integration with Wallet Providers**: Connect to different wallet providers and interact with the Ethereum network.
+Audits cost a fortune and protocols still get drained. So the idea is: you're the auditor. The mascot is the bug that's in every codebase.
 
-![Debug Contracts tab](https://github.com/scaffold-eth/scaffold-eth-2/assets/55535804/b237af0c-5027-4849-a5c1-2e31495cccb1)
+## Contracts (Sepolia)
 
-## Requirements
+- BugToken: [0x93af1a82681f1cc2743ee7b244764d1721aa0c39](https://sepolia.etherscan.io/address/0x93af1a82681f1cc2743ee7b244764d1721aa0c39#code)
+- BugBountyHunter: [0x17200d4158cdae5d30c3dbc66fd9702b31c39870](https://sepolia.etherscan.io/address/0x17200d4158cdae5d30c3dbc66fd9702b31c39870#code)
 
-Before you begin, you need to install the following tools:
+## How to play
 
-- [Node (>= v20.18.3)](https://nodejs.org/en/download/)
-- Yarn ([v1](https://classic.yarnpkg.com/en/docs/install/) or [v2+](https://yarnpkg.com/getting-started/install))
-- [Git](https://git-scm.com/downloads)
+1. Get some Sepolia ETH for gas (see below)
+2. Connect your wallet on the site, on Sepolia
+3. Claim 500 BUG from the faucet (once every 24h)
+4. Approve the game to spend your BUG (one approval = 10 hunts)
+5. Hunt. The result shows up after 1-3 minutes once Chainlink answers. While you wait you can play "Rug or Legit", which is just for fun and not on-chain.
 
-## Quickstart
+## How the game works
 
-To get started with Scaffold-ETH 2, follow the steps below:
+`hunt()` takes 100 BUG and asks Chainlink VRF for a random number. When Chainlink calls back, the number (mod 10000) decides the severity:
 
-1. Install dependencies if it was skipped in CLI:
+| Result | Chance | Bounty |
+| --- | --- | --- |
+| Nothing | 45% | 0 |
+| Gas | 25% | 40 |
+| Low | 15% | 100 |
+| Medium | 9% | 200 |
+| High | 4.5% | 400 |
+| Critical | 1.5% | 1000 |
 
-```
-cd my-dapp-example
+On average you get back about 76 per 100 spent, so the pool slowly refills.
+
+Each pending hunt reserves 1000 BUG from the pool so there's always enough to pay out, and you can only have one hunt running at a time. If Chainlink never answers, the owner can refund the hunt with `clearStuckHunt()`. Stats are stored on-chain and the leaderboard reads them with `getLeaderboard()`.
+
+## Token
+
+OpenZeppelin ERC20 with Burnable, Capped and Ownable.
+
+- Name/symbol: Bug Bounty Token / BUG
+- Max supply: 10,000,000
+- `mint()` is owner only and can't go over the cap
+- `burn()` lets anyone burn their own tokens
+- `claim()` is the faucet: 500 BUG per wallet every 24h, reverts if you claim too early or the faucet is empty
+
+Tokenomics:
+
+| | Amount | % |
+| --- | --- | --- |
+| Faucet (in the token contract) | 4,000,000 | 40 |
+| Prize pool (in the game contract) | 2,000,000 | 20 |
+| Me | 1,000,000 | 10 |
+| Not minted | 3,000,000 | 30 |
+
+## Getting Sepolia ETH
+
+- Google Cloud faucet: https://cloud.google.com/application/web3/faucet/ethereum/sepolia
+- Alchemy faucet: https://www.alchemy.com/faucets/ethereum-sepolia
+- PoW faucet (no account): https://sepolia-faucet.pk910.de/
+
+## Running it
+
+Needs Node 20+, Yarn and Foundry.
+
+```bash
 yarn install
-```
-
-2. Run a local network in the first terminal:
-
-```
-yarn chain
-```
-
-This command starts a local Ethereum network using Foundry. The network runs on your local machine and can be used for testing and development. You can customize the network configuration in `packages/foundry/foundry.toml`.
-
-3. On a second terminal, deploy the test contract:
-
-```
-yarn deploy
-```
-
-This command deploys a test smart contract to the local network. The contract is located in `packages/foundry/contracts` and can be modified to suit your needs. The `yarn deploy` command uses the deploy script located in `packages/foundry/script` to deploy the contract to the network. You can also customize the deploy script.
-
-4. On a third terminal, start your NextJS app:
-
-```
 yarn start
 ```
 
-Visit your app on: `http://localhost:3000`. You can interact with your smart contract using the `Debug Contracts` page. You can tweak the app config in `packages/nextjs/scaffold.config.ts`.
+Then open http://localhost:3000. The frontend already points at the Sepolia contracts so you don't need a local chain.
 
-Run smart contract test with `yarn foundry:test`
+Tests:
 
-- Edit your smart contracts in `packages/foundry/contracts`
-- Edit your frontend homepage at `packages/nextjs/app/page.tsx`. For guidance on [routing](https://nextjs.org/docs/app/building-your-application/routing/defining-routes) and configuring [pages/layouts](https://nextjs.org/docs/app/building-your-application/routing/pages-and-layouts) checkout the Next.js documentation.
-- Edit your deployment scripts in `packages/foundry/script`
+```bash
+yarn foundry:test
+```
 
+There are 23 tests covering mint/burn/transfer, the onlyOwner checks, the faucet cooldown, and the game (payouts for every severity, reverts, stuck hunt refunds, plus a fuzz test). The game tests use Chainlink's VRF mock.
 
-## Documentation
+To deploy your own: you need a Chainlink VRF subscription funded with Sepolia ETH. Put your subscription id and wallet in `packages/foundry/script/DeployBug.s.sol`, run `yarn deploy --network sepolia` and `yarn verify --network sepolia`, then add the game contract as a consumer on the subscription.
 
-Visit our [docs](https://docs.scaffoldeth.io) to learn how to start building with Scaffold-ETH 2.
+## Stack
 
-To know more about its features, check out our [website](https://scaffoldeth.io).
-
-## Contributing to Scaffold-ETH 2
-
-We welcome contributions to Scaffold-ETH 2!
-
-Please see [CONTRIBUTING.MD](https://github.com/scaffold-eth/scaffold-eth-2/blob/main/CONTRIBUTING.md) for more information and guidelines for contributing to Scaffold-ETH 2.
+Solidity, OpenZeppelin, Chainlink VRF v2.5, Foundry, Next.js, TypeScript, Tailwind/DaisyUI, wagmi, viem, RainbowKit. Started from Scaffold-ETH 2.
