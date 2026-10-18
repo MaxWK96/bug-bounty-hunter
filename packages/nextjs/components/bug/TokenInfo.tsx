@@ -13,7 +13,7 @@ export const TokenInfo = () => {
 
   return (
     <section id="token" className="max-w-5xl mx-auto px-4 py-12">
-      <h2 className="text-3xl font-bold text-center mb-8">Token info</h2>
+      <h2 className="text-3xl font-bold font-mono text-center mb-8">Token info</h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="card bg-base-100 shadow p-5">
           <p className="opacity-70">Total supply</p>
@@ -42,7 +42,7 @@ export const TokenInfo = () => {
           </a>
         )}
       </div>
-      <h3 className="text-xl font-bold mt-8 mb-2">Tokenomics</h3>
+      <h3 className="text-xl font-bold font-mono mt-8 mb-2">Tokenomics</h3>
       <div className="overflow-x-auto">
         <table className="table">
           <thead>
