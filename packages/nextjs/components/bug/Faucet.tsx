@@ -17,7 +17,7 @@ const formatTime = (s: number) => {
 export const Faucet = () => {
   const { address } = useAccount();
 
-  // "now" ticks every second so the countdown moves
+  // tick every second for the countdown
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
   useEffect(() => {
     const timer = setInterval(() => setNow(Math.floor(Date.now() / 1000)), 1000);
@@ -43,13 +43,13 @@ export const Faucet = () => {
     try {
       await writeContractAsync({ functionName: "claim" });
     } catch (e) {
-      console.error("Claim failed", e); // the popup already shows the error
+      console.error("Claim failed", e); // scaffold already shows a toast
     }
   };
 
   return (
     <div className="card bg-base-100 shadow-md p-5 w-full max-w-md text-center">
-      <h3 className="text-xl font-bold">Free $BUG faucet</h3>
+      <h3 className="text-xl font-bold font-mono">Free $BUG faucet</h3>
       <p className="opacity-70">500 BUG every 24 hours</p>
       <button className="btn btn-primary mt-4" disabled={!canClaim} onClick={handleClaim}>
         {isMining && <span className="loading loading-spinner" />}

@@ -19,7 +19,7 @@ export const Leaderboard = () => {
 
   return (
     <div className="card bg-base-100 shadow-md p-6 w-full max-w-2xl">
-      <h3 className="text-2xl font-bold text-center">🏆 Top auditors</h3>
+      <h3 className="text-2xl font-bold font-mono text-center">Top auditors</h3>
       {rows.length === 0 ? (
         <p className="text-center opacity-70 mt-2">No hunts yet. Be the first!</p>
       ) : (
