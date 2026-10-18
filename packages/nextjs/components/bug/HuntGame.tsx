@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { formatEther, parseEther } from "viem";
 import { useAccount } from "wagmi";
+import { RugOrLegit } from "~~/components/bug/RugOrLegit";
 import { useDeployedContractInfo, useScaffoldReadContract, useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
 
 const HUNT_COST = parseEther("100");
@@ -19,12 +21,29 @@ const SEVERITIES = [
   { label: "Critical", emoji: "🔴", line: "CRITICAL! You saved the protocol!", color: "text-error" },
 ];
 
+// pick flavor text from requestId so a refresh shows the same finding
+const FINDINGS: Record<number, string[]> = {
+  1: ["Use calldata instead of memory", "Cache array length in loops", "Pack storage variables"],
+  2: ["Missing zero-address check", "Floating pragma", "Event not emitted on state change"],
+  3: ["Unchecked return value", "Centralization risk in onlyOwner", "Front-running on approve()"],
+  4: ["Oracle price manipulation", "Missing slippage protection", "Signature replay"],
+  5: ["Reentrancy in withdraw()", "Unprotected initializer", "Arbitrary delegatecall"],
+};
+
+const findingTitle = (severity: number, requestId: bigint) => {
+  const list = FINDINGS[severity];
+  return list ? list[Number(requestId % BigInt(list.length))] : "Clean code. Nothing found.";
+};
+
+// rug or legit score is just local state, nothing on-chain
+type RugScore = { correct: number; total: number; streak: number; best: number };
+const EMPTY_SCORE: RugScore = { correct: 0, total: 0, streak: 0, best: 0 };
+
 export const HuntGame = () => {
   const { address } = useAccount();
   const { data: gameInfo } = useDeployedContractInfo({ contractName: "BugBountyHunter" });
   const gameAddress = gameInfo?.address;
 
-  // --- reads (all refresh automatically) ---
   const { data: balance } = useScaffoldReadContract({
     contractName: "BugToken",
     functionName: "balanceOf",
@@ -50,7 +69,6 @@ export const HuntGame = () => {
     functionName: "poolAvailable",
   });
 
-  // --- writes ---
   const { writeContractAsync: writeToken, isMining: isApproving } = useScaffoldWriteContract({
     contractName: "BugToken",
   });
@@ -65,6 +83,19 @@ export const HuntGame = () => {
     if (wasHunting.current && isHunting === false) setShowResult(true);
     wasHunting.current = isHunting === true;
   }, [isHunting]);
+
+  const [rugScore, setRugScore] = useState<RugScore>(EMPTY_SCORE);
+  const handleRugAnswer = useCallback((correct: boolean) => {
+    setRugScore(s => {
+      const streak = correct ? s.streak + 1 : 0;
+      return {
+        correct: s.correct + (correct ? 1 : 0),
+        total: s.total + 1,
+        streak,
+        best: Math.max(s.best, streak),
+      };
+    });
+  }, []);
 
   const notEnoughBug = balance !== undefined && balance < HUNT_COST;
   const needsApproval = allowance !== undefined && allowance < HUNT_COST;
@@ -83,6 +114,7 @@ export const HuntGame = () => {
 
   const hunt = async () => {
     setShowResult(false);
+    setRugScore(EMPTY_SCORE);
     try {
       await writeGame({ functionName: "hunt" });
     } catch (e) {
@@ -100,24 +132,39 @@ export const HuntGame = () => {
 
   return (
     <div className="card bg-base-100 shadow-md p-6 w-full max-w-md text-center">
-      <h3 className="text-2xl font-bold">🔍 Hunt for bugs</h3>
-      <p className="opacity-70">Costs 100 BUG. Chainlink VRF decides what you find.</p>
+      <Image
+        src="/bug-mascot.png"
+        alt="$BUG mascot"
+        width={80}
+        height={80}
+        className={`mx-auto ${isHunting ? "animate-bounce" : ""}`}
+      />
+      <h3 className="text-2xl font-bold font-mono mt-2">Hunt for bugs</h3>
+      <p className="opacity-70">Pay 100 BUG, find a bug, earn a bounty.</p>
       <p className="text-sm mt-1">
         Prize pool: {poolAvailable !== undefined ? Number(formatEther(poolAvailable)).toLocaleString() : "…"} BUG
       </p>
 
       {isHunting ? (
-        <div className="my-6">
-          <span className="loading loading-dots loading-lg" />
-          <p className="mt-2">Auditor is reviewing your code… (1–3 min)</p>
-          <p className="text-xs opacity-60">Waiting for Chainlink VRF to deliver a random number.</p>
+        <div className="my-4">
+          <p className="font-mono">Auditors are reviewing your code… (1–3 min)</p>
+          <RugOrLegit onAnswer={handleRugAnswer} />
+          <p className="text-sm font-mono">
+            Score: {rugScore.correct}/{rugScore.total} · Streak: {rugScore.streak} 🔥
+          </p>
         </div>
       ) : showResult && result && lastHunt ? (
         <div className="my-6">
           <p className="text-5xl">{result.emoji}</p>
           <p className={`text-2xl font-bold ${result.color}`}>{result.label}</p>
-          <p>{result.line}</p>
+          <p className="font-mono mt-1">{findingTitle(lastHunt[0], lastHunt[2])}</p>
+          <p className="text-sm opacity-80">{result.line}</p>
           <p className="text-xl mt-2">+{Number(formatEther(lastHunt[1])).toLocaleString()} BUG</p>
+          {rugScore.total > 0 && (
+            <p className="text-sm mt-3 opacity-80">
+              Rug check: {rugScore.correct}/{rugScore.total} correct · best streak {rugScore.best}
+            </p>
+          )}
         </div>
       ) : null}
 
