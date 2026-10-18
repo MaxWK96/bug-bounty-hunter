@@ -1,6 +1,7 @@
 "use client";
 
 import type { NextPage } from "next";
+import { Community } from "~~/components/bug/Community";
 import { Faucet } from "~~/components/bug/Faucet";
 import { Hero } from "~~/components/bug/Hero";
 import { HuntGame } from "~~/components/bug/HuntGame";
@@ -22,6 +23,7 @@ const Home: NextPage = () => {
           <Leaderboard />
         </div>
       </section>
+      <Community />
     </main>
   );
 };
