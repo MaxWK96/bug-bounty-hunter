@@ -2,7 +2,7 @@
 
 Meme token + game on Sepolia. You pay 100 BUG to "hunt" for a vulnerability, and Chainlink VRF decides what you found. Most of the time it's nothing or a gas optimization, sometimes it's a Critical worth 1000 BUG.
 
-Live site: TODO
+Live site: https://bug-bounty-hunter.vercel.app/
 
 Testnet only, the token is worth nothing.
 

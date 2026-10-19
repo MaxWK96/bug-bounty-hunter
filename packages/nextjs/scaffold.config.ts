@@ -19,7 +19,7 @@ const scaffoldConfig = {
   // The interval at which the front-end polls the RPC servers for new data.
   pollingInterval: 4000,
 
-  alchemyApiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY || DEFAULT_ALCHEMY_API_KEY,
+  alchemyApiKey: process.env.ALCHEMY_API_KEY || DEFAULT_ALCHEMY_API_KEY,
 
   rpcOverrides: {
     // Example:
